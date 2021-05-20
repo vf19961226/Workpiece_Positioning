@@ -58,10 +58,12 @@ client.on_connect = on_connect #連上Broker時要做的動作
 client.on_message = sub_messages #接到訂閱消息回傳時的動作
 client.loop_start() #MQTT啟動
 
+n = 0 #左相機編號
+m = 1 #右相機編號
 while 1:
     '''相機影像截圖'''
-    L_cap = cv2.VideoCapture(0)
-    R_cap = cv2.VideoCapture(1)
+    L_cap = cv2.VideoCapture(n)
+    R_cap = cv2.VideoCapture(m)
     while(1):
         L_ret, L_frame = L_cap.read()
         R_ret, R_frame = R_cap.read()
@@ -88,13 +90,13 @@ while 1:
         break
     
     '''左相機影像校正'''
-    L_mtx, L_dist = ip.npz_read("./data/L_camera_parameter.npz")
+    L_mtx, L_dist = ip.npz_read('./data/camera_parameter' + str(n) + '.npz')
     img = cv2.imread("L_img.jpg")
     #img = cv2.imread("./figure/obj_L_img/obj_L_img29.jpg") #Only for test
     L_img = ip.img_correction(img, L_mtx, L_dist)
     
     '''右相機影像校正'''
-    R_mtx, R_dist = ip.npz_read("./data/R_camera_parameter.npz")
+    R_mtx, R_dist = ip.npz_read('./data/camera_parameter' + str(m) + '.npz')
     img = cv2.imread("R_img.jpg")
     #img = cv2.imread("./figure/obj_R_img/obj_R_img29.jpg") #Only for test
     R_img = ip.img_correction(img, R_mtx, R_dist)
