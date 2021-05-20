@@ -12,5 +12,6 @@
 6. sudo mkdir Workpiece_Positioning
 7. 移至剛剛創建的資料夾
 8. git clone https://github.com/vf19961226/Workpiece_Positioning.git
-9. 移至剛剛下載的github資料夾內
-10. sudo pip install -r requirements.txt
+9. 如果已經下載過則用 git pull https://github.com/vf19961226/Workpiece_Positioning.git
+10. 移至剛剛下載的github資料夾內
+11. sudo pip install -r requirements.txt
