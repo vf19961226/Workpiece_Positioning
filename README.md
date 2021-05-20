@@ -15,3 +15,6 @@
 9. 如果已經下載過則用 git pull https://github.com/vf19961226/Workpiece_Positioning.git
 10. 移至剛剛下載的github資料夾內
 11. sudo pip install -r requirements.txt
+
+## 安裝git
+sudo apt-get install git-all
