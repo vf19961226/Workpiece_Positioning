@@ -2,6 +2,7 @@
 
 ## 其他檔案（超過25MB）
 [**YOLOv4權重檔**](https://drive.google.com/file/d/1faaJZJvF5MQV_GsRJ9hcQIa_ofdKvUCO/view?usp=sharing)    
+此檔案放置位置為data資料夾中    
 sudo wget "https://drive.google.com/u/0/uc?id=1faaJZJvF5MQV_GsRJ9hcQIa_ofdKvUCO&export=download" "My_yolov4_best.weights"
 
 ## 使用教學
