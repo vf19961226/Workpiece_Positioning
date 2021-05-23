@@ -11,18 +11,20 @@
 ### 硬體
 本專案之程式主要運行於Nvidia Jetson Nano 2GB上，並搭配2部WebCam進行影像擷取的作業，其硬體規格如下所述。
 
-#### Nvidia Jetson Nano 2GB
+#### [**Nvidia Jetson Nano 2GB**](https://www.nvidia.com/zh-tw/autonomous-machines/embedded-systems/jetson-nano/education-projects/)
 
 |項目|版本
 |:---:|:---:
 |作業系統|Ubuntu 18.04.5 LTS
-|顯示卡|
-|記憶體|
+|CPU|四核心 ARM® A57 @ 1.43 GHz
+|GPU|配備 128 個核心的 NVIDIA Maxwell™
+|記憶體|2 GB 64 位元 LPDDR4 25.6 GB/秒
+|儲存空間|SanDisk Ultra 64GB
 |CUDA|10.2
 |Python|3.7.10
 
 #### WebCam
-WebCam使用ASUS推出的
+WebCam使用ASUS推出的[**Webcam C3**](https://www.asus.com/tw/accessories/streaming-kits/all-series/asus-webcam-c3/)，以流暢的 30 fps 輸出畫質銳利的 FHD (1920 x 1080) 視訊。
 
 ### 軟體
 本專案之主程式使用Python程式語言以及搭配Numpy、OpenCV等套件包撰寫。另外建置YOLOv4工件辨識模型於Google Colaboratory中進行建置。以下將對兩部分之環境進行說明。
