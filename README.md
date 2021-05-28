@@ -52,13 +52,13 @@ WebCam使用ASUS推出的[**Webcam C3**](https://www.asus.com/tw/accessories/str
 
 
 ## 其他檔案（超過25MB）
-[**YOLOv4權重檔**](http://140.116.86.56:5000/sharing/58yxHTxMn)
-[**YOLOv4權重檔（onnx）**](http://140.116.86.56:5000/sharing/mIB3R7X59)
-[**YOLOv4權重檔（trt）**](http://140.116.86.56:5000/sharing/KPnn1Pqb8)
-此檔案放置位置為data資料夾中    
-sudo wget "http://140.116.86.56:5000/fsdownload/58yxHTxMn/My_yolov4.weights" "My_yolov4.weights"
-sudo wget "http://140.116.86.56:5000/fsdownload/mIB3R7X59/My_yolov4.onnx" "My_yolov4.onnx"
-sudo wget "http://140.116.86.56:5000/fsdownload/KPnn1Pqb8/My_yolov4.trt" "My_yolov4.trt"
+* [**YOLOv4權重檔**](http://140.116.86.56:5000/sharing/58yxHTxMn)
+* [**YOLOv4權重檔（onnx）**](http://140.116.86.56:5000/sharing/mIB3R7X59)
+* [**YOLOv4權重檔（trt）**](http://140.116.86.56:5000/sharing/KPnn1Pqb8)    
+檔案放置位置為data資料夾中    
+sudo wget "http://140.116.86.56:5000/fsdownload/58yxHTxMn/My_yolov4.weights" "My_yolov4.weights"    
+sudo wget "http://140.116.86.56:5000/fsdownload/mIB3R7X59/My_yolov4.onnx" "My_yolov4.onnx"    
+sudo wget "http://140.116.86.56:5000/fsdownload/KPnn1Pqb8/My_yolov4.trt" "My_yolov4.trt"    
 
 ## 使用教學
 1. sudo apt-get update
