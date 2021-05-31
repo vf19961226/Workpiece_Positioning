@@ -9,20 +9,19 @@ Reference
 [1] https://ithelp.ithome.com.tw/articles/10227131
 [2] https://sites.google.com/site/ezpythoncolorcourse/globalvariablelocalvariable
 [3] https://www.itread01.com/p/1426490.html
-[?] https://github.com/NVIDIA-AI-IOT/yolov4_deepstream/tree/master/tensorrt_yolov4
+[4] https://www.rs-online.com/designspark/nvidia-jetson-nanotensor-rtyolov4-cn
+[5] https://github.com/jkjung-avt/tensorrt_demos[?] https://github.com/NVIDIA-AI-IOT/yolov4_deepstream/tree/master/tensorrt_yolov4
+
 [?] https://automaticaddison.com/how-to-set-up-the-nvidia-jetson-nano-developer-kit/
 [?] https://automaticaddison.com/how-to-install-opencv-4-5-on-nvidia-jetson-nano/
 [?]* http://server.zhiding.cn/server/2021/0426/3133640.shtml
-
-[4] https://www.rs-online.com/designspark/nvidia-jetson-nanotensor-rtyolov4-cn
-[5] https://github.com/jkjung-avt/tensorrt_demos
 """
 
 import cv2
 import numpy as np
 import paho.mqtt.client as mqtt
 import time
-import numba as nb #加速運算用
+
 import pycuda.autoinit  # This is needed for initializing CUDA driver
 
 
@@ -67,7 +66,7 @@ def img_correction (img, npz_path):
     img = ip.img_correction(img, mtx, dist)
     return img
 
-@nb.jit(nopython=True)
+
 def positioning (img_gray, box):
     left, top, width, height = box
     left_top = [left , top]
@@ -208,7 +207,7 @@ stereo = cv2.StereoBM_create(numDisparities=16, blockSize=11) #參數可調（�
 
 while 1:
     '''相機影像截圖'''
-    '''
+    
     L_cap = cv2.VideoCapture(n)
     R_cap = cv2.VideoCapture(m)
     while(1):
@@ -228,24 +227,16 @@ while 1:
     L_cap.release()
     R_cap.release()
     cv2.destroyAllWindows()
-    '''
+    
     if sub_return[1] == "END":
         break
     t2 = time.time()
     '''左相機影像校正'''
-    #L_mtx, L_dist = ip.npz_read('./data/camera_parameter_' + str(n) + '.npz')
-    #img = cv2.imread("L_img.jpg")
-    L_frame = cv2.imread("./figure/obj_L_img/obj_L_img29.jpg") #Only for test
-    #L_img = ip.img_correction(L_frame, L_mtx, L_dist)
     path = './data/camera_parameter_' + str(n) + '.npz'
     L_img = img_correction(L_frame, path)
     L_gray = cv2.cvtColor(L_img, cv2.COLOR_BGR2GRAY)
     
     '''右相機影像校正'''
-    #R_mtx, R_dist = ip.npz_read('./data/camera_parameter_' + str(m) + '.npz')
-    #img = cv2.imread("R_img.jpg")
-    R_frame = cv2.imread("./figure/obj_R_img/obj_R_img29.jpg") #Only for test
-    #R_img = ip.img_correction(R_frame, R_mtx, R_dist)
     path = './data/camera_parameter_' + str(m) + '.npz'
     R_img = img_correction(R_frame, path)
     R_gray = cv2.cvtColor(R_img, cv2.COLOR_BGR2GRAY)
@@ -273,10 +264,11 @@ while 1:
         publish(client, "Feedback", output) #發布指令
         sub_return = ['Nothing','Nothing']
         t5 = time.time()
-        #print("影像擷取執行時間為：%f 秒" % (t2 - t1))
-
+        
+        print("影像擷取執行時間為：%f 秒" % (t2 - t1))
         print('影像校正以及計算公制像素比執行時間為： %f 秒' % (t3 - t2))
         print('YOLOv4執行時間為： %f 秒' % (t4 - t3))
         print('工件定位執行時間為： %f 秒' % (t5 - t4))
         print('全部執行時間為： %f 秒' % (t5 - t2))
+        
 client.loop_stop() #MQTT停止
