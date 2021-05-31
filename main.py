@@ -207,7 +207,6 @@ stereo = cv2.StereoBM_create(numDisparities=16, blockSize=11) #參數可調（�
 
 while 1:
     '''相機影像截圖'''
-    
     L_cap = cv2.VideoCapture(n)
     R_cap = cv2.VideoCapture(m)
     while(1):
