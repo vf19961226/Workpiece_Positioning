@@ -25,7 +25,7 @@ while(1):
     if ret == True :
         cv.imshow("capture", frame)
         if cv.waitKey(1) & 0xFF == ord('q'): 
-            cv.imwrite("./figure/" + str(n) + "/img" + str(i) + ".jpg", frame)
+            cv.imwrite("./figure/" + str(n) + "/img" + str(i) + ".png", frame)
             i = i + 1
             if  i == photo_num:
                 break
@@ -44,7 +44,7 @@ objp[:,:2] = np.mgrid[0:6,0:8].T.reshape(-1,2)
 objpoints = [] # 3d point in real world space
 imgpoints = [] # 2d points in image plane.
 
-images = glob.glob('./figure/' + str(n) +'/*.jpg')
+images = glob.glob('./figure/' + str(n) +'/*.png')
 
 for fname in images:
     img = cv.imread(fname)
@@ -70,7 +70,7 @@ cv.destroyAllWindows()
 ret, mtx, dist, rvecs, tvecs = cv.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
 
 # 去畸变
-img2 = cv.imread('./figure/' + str(n) +'/img0.jpg')
+img2 = cv.imread('./figure/' + str(n) +'/img0.png')
 h,  w = img2.shape[:2]
 newcameramtx, roi=cv.getOptimalNewCameraMatrix(mtx,dist,(w,h),0,(w,h)) # 自由比例参数
 # undistort

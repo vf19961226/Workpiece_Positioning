@@ -87,7 +87,7 @@ def image_processing (img): #影像取灰階、高斯模糊（濾波）、肯尼
     return canny
 
 def hough (img): #使用霍夫源檢測尋找圓心位置
-    circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 10, param1 = 75, param2 = 5, minRadius = 0, maxRadius = 10) #參數已經調整成找到定位塊上三個圓型定位點
+    circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 10, param1 = 10, param2 = 5, minRadius = 3, maxRadius = 9) #參數已經調整成找到定位塊上三個圓型定位點
     #circles = np.uint16(np.around(circles))
     return circles
 
