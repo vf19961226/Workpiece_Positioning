@@ -24,7 +24,7 @@
 |Python|3.7.10
 
 #### WebCam
-WebCam使用ASUS推出的[**Webcam C3**](https://www.asus.com/tw/accessories/streaming-kits/all-series/asus-webcam-c3/)，以流暢的 30 fps 輸出畫質銳利的 FHD (1920 x 1080) 視訊。
+WebCam使用ASUS推出的[**Webcam C3**](https://www.asus.com/tw/accessories/streaming-kits/all-series/asus-webcam-c3/)，以流暢的 30 fps 輸出畫質銳利的 FHD (1920 x 1080) 視訊，但因感光能力較差，在正常光源下有過曝情形，故改用Logitech推出的[**C920e**](https://www.logitech.com/zh-tw/products/webcams/c920e-business-webcam.960-001360.html)，其感光能力較佳，且也能以流暢的 30 fps 輸出畫質銳利的 FHD (1920 x 1080) 視訊。
 
 ### 軟體
 本專案之主程式使用Python程式語言以及搭配Numpy、OpenCV等套件包撰寫。另外建置YOLOv4工件辨識模型於Google Colaboratory中進行建置。以下將對兩部分之環境進行說明。
