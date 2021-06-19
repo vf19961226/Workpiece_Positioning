@@ -4,12 +4,12 @@
 本專案為澄德基金會「[**2021 大專校院機電暨智慧創意實作競賽**](https://www.chengde.org.tw/page.php?menu_id=16&p_id=77)」以及109學年第2學期國立成功大學機械系「[**物聯網與大數據於智慧製造應用**](http://class-qry.acad.ncku.edu.tw/syllabus/online_display.php?syear=0108&sem=2&co_no=E134300&class_code=)」課程之期末專題的主要程式，本文檔將會敘述使用環境以及程式架構。
 
 ## 程式概述
-本專案之程式主要運行於Nvidia Jetson Nano 2GB上，會使用2部WebCam進行影像擷取，並將擷取的影像校正後進行影像處理，之後使用YOLOv4建立的工件識別模型判別工件種類，同時測量其尺寸以及位置，最終回傳至機台控制端進行補正。
+本專案之程式主要運行於Nvidia Jetson Nano 2GB上，會使用WebCam進行影像擷取，並將擷取的影像校正後進行影像處理，之後使用YOLOv4建立的工件識別模型判別工件種類，同時測量其尺寸以及位置，最終回傳至機台控制端進行補正。
 
 ## 實作環境
 本專案可大致分為硬體與軟體兩部分，硬體部分將敘述設備之硬體規格，軟體部分將敘述軟體運行之所需環境，以下將就這兩部分進行說明。
 ### 硬體
-本專案之程式主要運行於Nvidia Jetson Nano 2GB上，並搭配2部WebCam進行影像擷取的作業，其硬體規格如下所述。
+本專案之程式主要運行於Nvidia Jetson Nano 2GB上，並搭配WebCam進行影像擷取的作業，其硬體規格如下所述。
 
 #### [**Nvidia Jetson Nano 2GB**](https://www.nvidia.com/zh-tw/autonomous-machines/embedded-systems/jetson-nano/education-projects/)
 
@@ -24,10 +24,10 @@
 |Python|3.7.10
 
 #### WebCam
-WebCam使用ASUS推出的[**Webcam C3**](https://www.asus.com/tw/accessories/streaming-kits/all-series/asus-webcam-c3/)，以流暢的 30 fps 輸出畫質銳利的 FHD (1920 x 1080) 視訊，但因感光能力較差，在正常光源下有過曝情形，故改用Logitech推出的[**C920e**](https://www.logitech.com/zh-tw/products/webcams/c920e-business-webcam.960-001360.html)，其感光能力較佳，且也能以流暢的 30 fps 輸出畫質銳利的 FHD (1920 x 1080) 視訊。
+WebCam使用ASUS推出的[**Webcam C3**](https://www.asus.com/tw/accessories/streaming-kits/all-series/asus-webcam-c3/)，以流暢的 30 fps 輸出畫質銳利的 FHD (1920 x 1080) 視訊，但因感光能力較差，在正常光源下有過曝情形，故改用Logitech推出的[**C920 PRO**](https://www.logitech.com/zh-tw/products/webcams/c920-pro-hd-webcam.960-001062.html)，其感光能力較佳，且也能以流暢的 30 fps 輸出畫質銳利的 FHD (1920 x 1080) 視訊。
 
 ### 軟體
-本專案之主程式使用Python程式語言以及搭配Numpy、OpenCV等套件包撰寫。另外建置YOLOv4工件辨識模型於Google Colaboratory中進行建置。以下將對兩部分之環境進行說明。
+本專案之主程式使用Python程式語言以及搭配Numpy、OpenCV等套件包撰寫。另外建置YOLOv4工件辨識模型於Google Colaboratory中進行建置，並將模型轉換為TensorRT版本，以利調用GPU加速運算。以下將對兩部分之環境進行說明。
 
 #### 主程式
 
@@ -37,6 +37,8 @@ WebCam使用ASUS推出的[**Webcam C3**](https://www.asus.com/tw/accessories/str
 |OpenCV|4.5.1
 |Numpy|1.19.4
 |Paho-mqtt|1.5.1
+|TensorRT|
+|Numba|
 
 #### Google Colaboratory
 
@@ -50,43 +52,190 @@ WebCam使用ASUS推出的[**Webcam C3**](https://www.asus.com/tw/accessories/str
 
 ## 程式流程
 1. **MQTT**    
-與MQTT Broker建立連線，並設定訂閱之主題，以及其他設定。
+與MQTT Broker建立連線，並設定訂閱之主題，以及其他設定。    
 
 2. **參數計算**    
-先計算好一些必要參數，如長度以及深度的公制像素比等，以便後續須調用時不用重新計算，節整電腦效能之浪費。
+先計算好一些必要參數，如長度的公制像素比等，以便後續須調用時不用重新計算，節整電腦效能之浪費。
 
 3. **影像擷取**    
-使用2部Webcam分別作為左右相機進行工件影像擷取。
+使用Webcam進行工件影像擷取，並將擷取到的影像進行校正。
 
-4. 影像處理
+4. **工件辨識**    
+將影像輸入建置好的模型進行辨識，將會回傳物件外框、工件類別、以及信心分數。
 
-5. 工件辨識
+5. **位置計算**    
+基於工件辨識獲得的物件外框進行影像遮罩後，進行輪廓檢測取得工件外觀形狀以及中心位置，並使用公制像素比進行換算以取得實際位置。
 
-6. 位置計算
-
-7. 回傳
+6. **回傳**    
+使用MQTT將結果回傳至機台控制電腦上進行校正。
 
 ## 其他檔案（超過25MB）
+因檔案過大無法上傳github，故另外提供雲端空間下載，下載後將檔案放置於[**data資料夾**](https://github.com/vf19961226/Workpiece_Positioning/tree/main/data)中。
 * [**YOLOv4權重檔**](http://140.116.86.56:5000/sharing/58yxHTxMn)
 * [**YOLOv4權重檔（onnx）**](http://140.116.86.56:5000/sharing/mIB3R7X59)
 * [**YOLOv4權重檔（trt）**](http://140.116.86.56:5000/sharing/KPnn1Pqb8)    
-檔案放置位置為data資料夾中    
-sudo wget "http://140.116.86.56:5000/fsdownload/58yxHTxMn/My_yolov4.weights" "My_yolov4.weights"    
-sudo wget "http://140.116.86.56:5000/fsdownload/mIB3R7X59/My_yolov4.onnx" "My_yolov4.onnx"    
-sudo wget "http://140.116.86.56:5000/fsdownload/KPnn1Pqb8/My_yolov4.trt" "My_yolov4.trt"    
 
 ## 使用教學
-1. sudo apt-get update
-2. sudo apt-get -y dist-upgrade
-3. sudo apt-get clean
-4. sudo apt-get autoremove
-5. 將路徑移至桌面
-6. sudo mkdir Workpiece_Positioning
-7. 移至剛剛創建的資料夾
-8. git clone https://github.com/vf19961226/Workpiece_Positioning.git
-9. 如果已經下載過則用 git pull https://github.com/vf19961226/Workpiece_Positioning.git
-10. 移至剛剛下載的github資料夾內
-11. sudo pip install -r requirements.txt
+### Nvidia Jetson Nano 設定
+1. 取得遠端更新伺服器的套件檔案清單
+```
+sudo apt-get update
+```
+2. 安裝更新清單上的更新
+```
+sudo apt-get -y dist-upgrade
+```
+3. 清除更新時所下載回來的更新(安裝)檔案
+```
+sudo apt-get clean
+```
+4. 自動清除更新後用不到的舊版本檔案
+```
+sudo apt-get autoremove
+```
+5. 安裝文字編輯器Vim
+```
+sudo apt-get install vim
+```
+6. 安裝Python 3.7
+```
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt install python3.7
+```
+7. 更換Python預設版本為Python 3.7
+    1. 檢視以安裝的Python版本    
+    ```
+    ls /usr/bin/python*
+    ```
+    2. 檢視系統預設的Python版本
+    ```
+    python --version
+    ```
+     3. 刪除預設的Python軟連結
+    ```
+    sudo rm /usr/bin/python
+    ```
+     4. 立一個新的軟連結指向Python 3.7
+    ```
+    sudo ln -s /usr/bin/python3.7 /usr/bin/python
+    ```
+8. 將pip升級至python3.7的版本    
+    1. 確認目前pip版本
+    ```
+    python -m pip --version
+    ```
+    2. 移除目前版本的pip
+    ```
+    sudo apt remove python-pip
+    ```
+    3. 安裝當前Python3版本的pip
+    ```
+    sudo apt install python3-pip
+    ```
+    4. 安裝Python3.7的pip
+    ```
+    python -m pip install pip
+    ```
+    5. 使用文字編輯器開啟`~/.bashrc`
+    ```
+    vim ~/.bashrc
+    ```
+    6. 將以下內容複製至文件末端
+    ```
+    # set PATH so it includes user's private bin if it exists
+    if [ -d "$HOME/.local/bin" ] ; then
+        PATH="$HOME/.local/bin:$PATH"
+    fi
+    ```
+    7. 重新讀取`.bashrc`或重新開啟終端機
+    ```
+    source ~/.bashrc
+    ```
+    8. 確認當前pip版本
+    ```
+    pip --version
+    ```
+9. 從github下載此程式碼
+```
+git clone https://github.com/vf19961226/Workpiece_Positioning.git
+```
+11. 安裝程式所需的套件包
+```
+cd Workpiece_Positioning
+pip install -r requirements.txt
+```
+### YOLOv4模型訓練
+於Google Colaboratory中訓練YOLOv4模型（[**連結**](https://colab.research.google.com/drive/1nP3mpV-nqMOppTdIv8poFU7VAdTEapRK?usp=sharing)），必須使用成大帳號登入（**@gs.ncku.edu.tw）
+### 模型轉換
+1. 下載模型轉換程式
+```
+git clone https://github.com/jkjung-avt/tensorrt_demos.git
+```
+2. 執行ssd資料夾中的`install_pycuda.sh`
+```
+cd tensorrt_demos/ssd
+./install_pycuda.sh
+```
+若顯示`nvcc not found`的話則需要手動修改`install_pycuda.sh`
+```
+vim ./install_pycuda.sh
+```
+將以下內容加入if與fi之間，並將雲本的內容註解掉
+```
+#!/bin/bash
+#
+# Reference for installing 'pycuda': https://wiki.tiker.net/PyCuda/Installation/Linux/Ubuntu
 
-## 安裝git
-sudo apt-get install git-all
+set -e
+
+if ! which nvcc > /dev/null; then
+  #echo "ERROR: nvcc not found"
+  #exit
+  echo "** Add CUDA stuffs into ~/.bashrc"
+  echo >> ${HOME}/.bashrc
+  echo "export PAYH=/usr/local/cuda/bin\${PATH:+:\${PATH}}" >> ${HOME}/.bashrc
+  echo "export LD_LIBRARY_PATH=/usr/local/cuda/lib64\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}" >> ${HOME}/.bashrc
+fi
+```
+3. 查看pycuda是否安裝成功
+```
+pip list | grep pycuda
+```
+4. 安裝onnx1.4.1
+```
+sudo apt-get install protobuf-compiler libprotoc-dev
+sudo pip install onnx==1.4.1
+```
+5. 建立相關程式
+```
+cd tensorrt_demos/plugins
+make
+```
+若nvcc報錯則修改`Makefile`中的`NVCC=nvcc`，修改成`NVCC=/usr/local/cuda/bin/nvcc`
+6. 將YOLOv4模型轉換為ONNX模型
+```
+python yolo_to_onnx.py -m My_yolov4
+```
+7. 將ONNX模型轉換為TensorRT模型
+```
+python onnx_to_tensorrt.py -m My_yolov4
+```
+### 使用主程式
+1. 執行[**Camera_Positioning.py**](https://github.com/vf19961226/Workpiece_Positioning/blob/main/Camera_Calibration.py)以取得相機參數
+2. 執行[**find_circle.py**](https://github.com/vf19961226/Workpiece_Positioning/blob/main/find_circle.py)以取得定位塊相關參數    
+此步驟需調整Gaussian濾波參數、肯尼邊緣檢測參數以及定位塊遮罩等，程式碼如下所示。
+```py
+blur_gray = cv2.GaussianBlur(gray,(3, 3), 0)
+canny = cv2.Canny(blur_gray,150,50)
+
+right_bottom = [img.shape[1] -150, img.shape[0]/2 -20]
+left_top = [img.shape[1]/2 +75 , img.shape[0]*0 +110]
+right_top = [img.shape[1] -150, img.shape[0]*0 +110]
+mid_left_bottom = [img.shape[1]/2 +75, img.shape[0]*0 +135]
+mid = [img.shape[1]/2 +145, img.shape[0]*0 +135]
+mid_right_bottom = [img.shape[1]/2 +145, img.shape[0]/2 -20]
+```
+4. 將定位塊相關參數複製至[main.py](https://github.com/vf19961226/Workpiece_Positioning/blob/main/main.py)相對應的區域
+5. 執行[main.py](https://github.com/vf19961226/Workpiece_Positioning/blob/main/main.py)，等待MQTT發送指令開始辨識
+6. 辨識完成後使用MQTT發布辨識結果
+* 另有一控制介面[Workpiece Positioning Contoller](https://github.com/vf19961226/Workpiece_Positioning)，可發布指令與接收辨識結果。
