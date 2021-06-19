@@ -238,4 +238,4 @@ mid_right_bottom = [img.shape[1]/2 +145, img.shape[0]/2 -20]
 4. 將定位塊相關參數複製至[main.py](https://github.com/vf19961226/Workpiece_Positioning/blob/main/main.py)相對應的區域
 5. 執行[main.py](https://github.com/vf19961226/Workpiece_Positioning/blob/main/main.py)，等待MQTT發送指令開始辨識
 6. 辨識完成後使用MQTT發布辨識結果
-* 另有一控制介面[Workpiece Positioning Contoller](https://github.com/vf19961226/Workpiece_Positioning)，可發布指令與接收辨識結果。
+* 另有一控制介面[Workpiece Positioning Contoller](https://github.com/vf19961226/Workpiece_Positioning_Contoller)，可發布指令與接收辨識結果。
