@@ -37,8 +37,9 @@ WebCam使用ASUS推出的[**Webcam C3**](https://www.asus.com/tw/accessories/str
 |OpenCV|4.5.1
 |Numpy|1.19.4
 |Paho-mqtt|1.5.1
-|TensorRT|
-|Numba|
+|TensorRT|7.1.3
+|Numba|0.34.0
+|Pycuda|2019.1.2
 
 #### Google Colaboratory
 
@@ -165,7 +166,7 @@ cd Workpiece_Positioning
 pip install -r requirements.txt
 ```
 ### YOLOv4模型訓練
-於Google Colaboratory中訓練YOLOv4模型（[**連結**](https://colab.research.google.com/drive/1nP3mpV-nqMOppTdIv8poFU7VAdTEapRK?usp=sharing)），必須使用成大帳號登入（**@gs.ncku.edu.tw）
+於Google Colaboratory中訓練YOLOv4模型（[**連結**](https://colab.research.google.com/drive/1nP3mpV-nqMOppTdIv8poFU7VAdTEapRK?usp=sharing)），必須使用成大帳號登入（**@gs.ncku.edu.tw）。訓練完成後將模型輸入至Nano上。
 ### 模型轉換
 1. 下載模型轉換程式
 ```
