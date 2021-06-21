@@ -22,6 +22,8 @@ import cv2
 import numpy as np
 import paho.mqtt.client as mqtt
 import time
+from itertools import combinations 
+import math
 
 import pycuda.autoinit  # This is needed for initializing CUDA driver
 
@@ -75,8 +77,8 @@ def positioning (img_gray, box):
     right_top = [left + width, top]
     vertices = np.array([ left_top, left_bottom, right_bottom, right_top], np.int32)
     
-    blur_gray = cv2.GaussianBlur(img_gray,(21, 21), 0)
-    canny = cv2.Canny(blur_gray,150,50)
+    blur_gray = cv2.GaussianBlur(img_gray,(29, 29), 0)
+    canny = cv2.Canny(blur_gray,50,60)
     
     roi_image = ip.region_of_interest(canny, vertices) 
 
@@ -90,12 +92,15 @@ def positioning (img_gray, box):
     rect = cv2.minAreaRect(total_cont) #Rotated Rectangle
     w = rect[1][0] * pixel_per_metricX #工件的寬(? <--回傳雷雕機
     h = rect[1][1] * pixel_per_metricY #工件的高(? <--回傳雷雕機
+    centroid, dimensions, angle = cv2.minAreaRect(cv2.boxPoints(rect))
 
     M = cv2.moments(total_cont) #尋找外接矩形的中點
-    cX = int(M["m10"] / M["m00"])
-    cY = int(M["m01"] / M["m00"])
+    #cX = int(M["m10"] / M["m00"])
+    #cY = int(M["m01"] / M["m00"])
+    cX = int(centroid[0])
+    cY = int(centroid[1])
     
-    Cpoint = [478,128.5] #Only for test
+    #Cpoint = [478,128.5] #Only for test
     cXpoint1 = np.array([cX, 0])
     cXpoint2 = np.array([Cpoint[0], 0])
     #longX = ip.get_pixel_long(really, cXpoint1, cXpoint2) #工件相對於定位工件的X軸座標  <--回傳雷雕機
@@ -121,10 +126,10 @@ def positioning (img_gray, box):
         
     low = location.index(min(location))
     for x1, y1, x2, y2 in lines[low]:
-        slope = (y2 - y1)/(x2 - x1)
+        slope = (y2 - y1)/((x2 - x1) + 0.0000000001)
         arc = ip.get_theta(slope) + theta #旋轉角度(世界座標)   <--回傳雷雕機
     
-    return longX, longY, w, h, arc
+    return longX, longY, w, h, arc, cX, cY
 
 '''Mqtt設定'''
 client = initial("35.238.26.242", 1883) #需修改成Broker的IP位置
@@ -136,7 +141,7 @@ client.loop_start() #MQTT啟動
 
 '''計算必要參數'''
 n = 0 #左相機編號
-img = cv2.imread('./figure/c_L_img0.jpg') #匯入背景照片(左相機)
+img = cv2.imread('./figure/background.png') #匯入背景照片(左相機)
 path = './data/camera_parameter_' + str(n) + '.npz'
 img = img_correction(img, path) #影像校正
 
@@ -144,12 +149,12 @@ gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) #像素長度換算
 blur_gray = cv2.GaussianBlur(gray,(3, 3), 0)
 canny = cv2.Canny(blur_gray,150,50)
 
-right_bottom = [img.shape[1] -150, img.shape[0]/2 -20]
-left_top = [img.shape[1]/2 +75 , img.shape[0]*0 +110]
-right_top = [img.shape[1] -150, img.shape[0]*0 +110]
-mid_left_bottom = [img.shape[1]/2 +75, img.shape[0]*0 +135]
-mid = [img.shape[1]/2 +145, img.shape[0]*0 +135]
-mid_right_bottom = [img.shape[1]/2 +145, img.shape[0]/2 -20]
+right_bottom = [img.shape[1] -145, img.shape[0]/2]
+left_top = [img.shape[1]/2 +80 , img.shape[0]*0 +130]
+right_top = [img.shape[1] -145, img.shape[0]*0 +130]
+mid_left_bottom = [img.shape[1]/2 +80, img.shape[0]*0 +155]
+mid = [img.shape[1]/2 +150, img.shape[0]*0 +155]
+mid_right_bottom = [img.shape[1]/2 +150, img.shape[0]/2]
 vertices = np.array([ mid_right_bottom, right_bottom, right_top, left_top, mid_left_bottom, mid], np.int32)
 roi_image = ip.region_of_interest(canny, vertices) #L形遮罩，方便辨識定位工件上的圓
 
@@ -157,53 +162,83 @@ circles = ip.hough(roi_image) #偵測定位工件上的圓
 
 really = 50 #世界座標中兩圓點間的距離為50mm(定位工件)
     
-slope = [] #計算每兩點間的斜率
-abs_slope = []
-for j in range(len(circles[0])-1):
-    x = circles[0][j][0] - circles[0][j+1][0]
-    y = circles[0][j][1] - circles[0][j+1][1]
-    slope.append(x/y)
-    abs_slope.append(abs(x/y))
+index = list(range(len(circles[0])))
+index = list(combinations(index, 3))
+for i in index:
+    abs_slope = []
+    ptp_long = [] #計算每兩點間的距離
+    slope = [] #計算每兩點間的斜率
+    ax = int(circles[0][i[0]][0]) - int(circles[0][i[1]][0])
+    ay = int(circles[0][i[0]][1]) - int(circles[0][i[1]][1])
+    bx = int(circles[0][i[2]][0]) - int(circles[0][i[1]][0])
+    by = int(circles[0][i[2]][1]) - int(circles[0][i[1]][1])
+    cx = int(circles[0][i[0]][0]) - int(circles[0][i[2]][0])
+    cy = int(circles[0][i[0]][1]) - int(circles[0][i[2]][1])
+    ptp_long.append(math.hypot(ax,ay))
+    ptp_long.append(math.hypot(bx,by))
+    ptp_long.append(math.hypot(cx,cy))
+    if ay == 0:
+        ay += 0.000000000001
+    elif by == 0:
+        by += 0.000000000001
+    elif cy == 0:
+        cy += 0.000000000001
+    slope.append(ax/ay)
+    slope.append(bx/by)
+    slope.append(cx/cy)
+    abs_slope.append(abs(ax/ay))
+    abs_slope.append(abs(bx/by))
+    abs_slope.append(abs(cx/cy))
+    min_slope = abs_slope.index(min(abs_slope)) #斜率絕對值最小為水平(X)
+    max_slope = abs_slope.index(max(abs_slope)) #斜率絕對值最大維垂直(Y)
+    X_long = ptp_long[min_slope]
+    Y_long = ptp_long[max_slope]
+    
+    for j in range(len(ptp_long)): #尋找斜邊
+        ptp_long2 = ptp_long.copy()
+        ptp_long2.pop(j)
+        hypotenuse = math.hypot(ptp_long2[0], ptp_long2[1])
+        if ptp_long[j]/hypotenuse >= 0.8 and ptp_long[j]/hypotenuse <= 1.2:
+            if X_long/Y_long >= 0.8 and X_long/Y_long <= 1.2: #兩邊距離需在一定區間內
+                break
+    
+    if ptp_long[j]/hypotenuse >= 0.8 and ptp_long[j]/hypotenuse <= 1.2:
+        if X_long/Y_long >= 0.8 and X_long/Y_long <= 1.2: #兩邊距離需在一定區間內
+            break
 else:
-    l = len(circles[0])-1
-    x = circles[0][l][0] - circles[0][0][0]
-    y = circles[0][l][1] - circles[0][0][1]
-    slope.append(x/y)
-    abs_slope.append(abs(x/y))
+    print("ERROR")
+    
 
-min_slope = abs_slope.index(min(abs_slope)) #斜率絕對值最小為水平(X)
-max_slope = abs_slope.index(max(abs_slope)) #斜率絕對值最大維垂直(Y)
+if min_slope == 0 and max_slope == 1:
+    Xpoint = circles[0][i[0]]
+    Ypoint = circles[0][i[2]]
+    Cpoint = circles[0][i[1]]
+elif min_slope == 0 and max_slope == 2:
+    Xpoint = circles[0][i[1]]
+    Ypoint = circles[0][i[2]]
+    Cpoint = circles[0][i[0]]
+elif min_slope == 1 and max_slope == 2:
+    Xpoint = circles[0][i[1]]
+    Ypoint = circles[0][i[0]]
+    Cpoint = circles[0][i[2]]
+elif min_slope == 1 and max_slope == 0:
+    Xpoint = circles[0][i[2]]
+    Ypoint = circles[0][i[0]]
+    Cpoint = circles[0][i[1]]
+elif min_slope == 2 and max_slope == 1:
+    Xpoint = circles[0][i[0]]
+    Ypoint = circles[0][i[1]]
+    Cpoint = circles[0][i[2]]
+elif min_slope == 2 and max_slope == 0:
+    Xpoint = circles[0][i[2]]
+    Ypoint = circles[0][i[1]]
+    Cpoint = circles[0][i[0]]
+
 theta = ip.get_theta(slope[min_slope]) #取得像機座標與實際座標的旋轉角度
-if min_slope == l:
-    Xpoint1 = circles[0][l]
-    Xpoint2 = circles[0][0]
-else:
-    Xpoint1 = circles[0][min_slope]
-    Xpoint2 = circles[0][min_slope+1]
-pixel_per_metricX = ip.get_pixel_long(really, Xpoint1, Xpoint2) #計算水平(X)的每像素公制距離
-print(Xpoint1)
-print(Xpoint2)
 
-if max_slope == l:
-    Ypoint1 = circles[0][l]
-    Ypoint2 = circles[0][0]
-else:
-    Ypoint1 = circles[0][max_slope]
-    Ypoint2 = circles[0][max_slope+1]
-pixel_per_metricY = ip.get_pixel_long(really, Ypoint1, Ypoint2) #計算垂直(Y)的每像素公制距離
-print(Ypoint1)
-print(Ypoint2)
-'''
-if Xpoint1[0] == Ypoint1[0] and Xpoint1[1] == Ypoint1[1]: #尋找定位工件的中點(超過三個圓的時候可能會報錯)
-    Cpoint = Xpoint1
-elif Xpoint1[0] == Ypoint2[0] and Xpoint1[1] == Ypoint2[1]:
-    Cpoint = Xpoint1
-elif Xpoint2[0] == Ypoint1[0] and Xpoint2[1] == Ypoint1[1]:
-    Cpoint = Xpoint2
-elif Xpoint2[0] == Ypoint1[0] and Xpoint2[1] == Ypoint1[1]:
-    Cpoint = Xpoint2
-'''
-
+pixel_per_metricX = ip.get_pixel_long(really, Xpoint, Cpoint) #計算水平(X)的每像素公制距離
+pixel_per_metricY = ip.get_pixel_long(really, Ypoint, Cpoint) #計算垂直(Y)的每像素公制距離
+print(Cpoint)
 while 1:
     '''相機影像截圖'''
     
@@ -230,7 +265,7 @@ while 1:
     '''左相機影像校正'''
     #L_mtx, L_dist = ip.npz_read('./data/camera_parameter_' + str(n) + '.npz')
     #img = cv2.imread("L_img.jpg")
-    #L_frame = cv2.imread("./figure/obj_L_img/obj_L_img29.jpg") #Only for test
+    #L_frame = cv2.imread("./figure/1.png") #Only for test
     #L_img = ip.img_correction(L_frame, L_mtx, L_dist)
     path = './data/camera_parameter_' + str(n) + '.npz'
     L_img = img_correction(L_frame, path)
@@ -238,20 +273,26 @@ while 1:
    
     '''Yolov4工件辨識'''
     
-    classes, confidences, boxes = My_yolo.trt_identify(L_img)
+    classes, confidences, boxes = My_yolo.identify(L_img)
+    #print(boxes)
     t3 = time.time()
     for classId, confidence, box in zip(classes.flatten(), confidences.flatten(), boxes):
         thisClass = classId
-        longX, longY, w, h, arc = positioning (L_gray, box)
-        
+        longX, longY, w, h, arc, cX, cY = positioning (L_gray, box)
+    
         '''MQTT傳送結果至雷雕機'''
         output = str(thisClass) + "," + str(longX) + "," + str(longY) + "," + str(w) + "," + str(h) +  "," + str(arc) #發布指令[工件種類, 以定位工件中點為原點的工件中心點X座標, 以定位工件中點為原點的工件中心點Y座標, 工件外接矩形寬, 工件外接矩形高, 工件距離攝影機深度, 弓箭旋轉角度(弧度)]
         publish(client, "Feedback", output) #發布指令
         sub_return = ['Nothing','Nothing']
         t4 = time.time()
-        print("影像擷取執行時間為：%f 秒" % (t2 - t1))
-        print('YOLOv4執行時間為： %f 秒' % (t3 - t2))
-        print('工件定位執行時間為： %f 秒' % (t4 - t3))
-        print('全部執行時間為： %f 秒' % (t4 - t1))
-        print(output)
+        #print("影像擷取執行時間為：%f 秒" % (t2 - t1))
+        #print('YOLOv4執行時間為： %f 秒' % (t3 - t2))
+        #print('工件定位執行時間為： %f 秒' % (t4 - t3))
+        #print('全部執行時間為： %f 秒' % (t4 - t1))
+        #print(output)
+    #cv2.circle(L_frame,(cX,cY),2,(0,0,255),3)
+    #L_frame = My_yolo.draw_box(L_frame, classes, confidences, boxes)
+    #cv2.imshow("1", L_frame)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
 client.loop_stop() #MQTT停止
