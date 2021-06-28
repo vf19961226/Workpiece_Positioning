@@ -166,7 +166,7 @@ cd Workpiece_Positioning
 pip install -r requirements.txt
 ```
 ### YOLOv4模型訓練
-於Google Colaboratory中訓練YOLOv4模型（[**連結**](https://colab.research.google.com/drive/1nP3mpV-nqMOppTdIv8poFU7VAdTEapRK?usp=sharing)），必須使用成大帳號登入（**@gs.ncku.edu.tw）。訓練完成後將模型輸入至Nano上。
+於Google Colaboratory中訓練YOLOv4模型（[**連結**](https://colab.research.google.com/drive/1nP3mpV-nqMOppTdIv8poFU7VAdTEapRK?usp=sharing)）（[**訓練集**](https://drive.google.com/drive/folders/1v8_SBl5XwqvwzncSEE8lBQR3WM4E3zJ8?usp=sharing)），必須使用成大帳號登入（**@gs.ncku.edu.tw）。訓練完成後將模型輸入至Nano上。
 ### 模型轉換
 1. 下載模型轉換程式
 ```
