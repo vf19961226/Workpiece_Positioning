@@ -4,24 +4,24 @@
 本專案為澄德基金會「[**2021 大專校院機電暨智慧創意實作競賽**](https://www.chengde.org.tw/page.php?menu_id=16&p_id=77)」以及109學年第2學期國立成功大學機械系「[**物聯網與大數據於智慧製造應用**](http://class-qry.acad.ncku.edu.tw/syllabus/online_display.php?syear=0108&sem=2&co_no=E134300&class_code=)」課程之期末專題的主要程式，本文檔將會敘述使用環境以及程式架構。
 
 ## 程式概述
-本專案之程式主要運行於Nvidia Jetson Nano 2GB上，會使用WebCam進行影像擷取，並將擷取的影像校正後進行影像處理，之後使用YOLOv4建立的工件識別模型判別工件種類，同時測量其尺寸以及位置，最終回傳至機台控制端進行補正。
+本專案之程式主要運行於Nvidia Jetson Nano上，會使用WebCam進行影像擷取，並將擷取的影像校正後進行影像處理，之後使用YOLOv4建立的工件識別模型判別工件種類，同時測量其尺寸以及位置，最終回傳至機台控制端進行補正。
 
 ## 實作環境
 本專案可大致分為硬體與軟體兩部分，硬體部分將敘述設備之硬體規格，軟體部分將敘述軟體運行之所需環境，以下將就這兩部分進行說明。
 ### 硬體
-本專案之程式主要運行於Nvidia Jetson Nano 2GB上，並搭配WebCam進行影像擷取的作業，其硬體規格如下所述。
+本專案之程式主要運行於Nvidia Jetson Nano上，並搭配WebCam進行影像擷取的作業，其硬體規格如下所述。
 
-#### [**Nvidia Jetson Nano 2GB**](https://www.nvidia.com/zh-tw/autonomous-machines/embedded-systems/jetson-nano/education-projects/)
+#### [**Nvidia Jetson Nano 2GB**](https://www.nvidia.com/zh-tw/autonomous-machines/embedded-systems/jetson-nano/)
 
 |項目|版本
 |:---:|:---:
 |作業系統|Ubuntu 18.04.5 LTS
 |CPU|四核心 ARM® A57 @ 1.43 GHz
 |GPU|配備 128 個核心的 NVIDIA Maxwell™
-|記憶體|2 GB 64 位元 LPDDR4 25.6 GB/秒
+|記憶體|4 GB 64 位元 LPDDR4 25.6 GB/秒
 |儲存空間|SanDisk Ultra 64GB
 |CUDA|10.2
-|Python|3.7.10
+|Python|3.6.9
 
 #### WebCam
 WebCam使用ASUS推出的[**Webcam C3**](https://www.asus.com/tw/accessories/streaming-kits/all-series/asus-webcam-c3/)，以流暢的 30 fps 輸出畫質銳利的 FHD (1920 x 1080) 視訊，但因感光能力較差，在正常光源下有過曝情形，故改用Logitech推出的[**C920 PRO**](https://www.logitech.com/zh-tw/products/webcams/c920-pro-hd-webcam.960-001062.html)，其感光能力較佳，且也能以流暢的 30 fps 輸出畫質銳利的 FHD (1920 x 1080) 視訊。
@@ -33,11 +33,11 @@ WebCam使用ASUS推出的[**Webcam C3**](https://www.asus.com/tw/accessories/str
 
 |項目|版本
 |:---:|:---:
-|Python|3.7.10
+|Python|3.6.9
 |OpenCV|4.5.1
 |Numpy|1.19.4
 |Paho-mqtt|1.5.1
-|TensorRT|7.1.3
+|TensorRT|8.0.1
 |Numba|0.34.0
 |Pycuda|2019.1.2
 
@@ -98,69 +98,16 @@ sudo apt-get autoremove
 ```
 sudo apt-get install vim
 ```
-6. 安裝Python 3.7
+6. 安裝pip
 ```
-sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt install python3.7
+sudo apt-get install python3-pip
+pip3 install --upgrade pip
 ```
-7. 更換Python預設版本為Python 3.7
-    1. 檢視以安裝的Python版本    
-    ```
-    ls /usr/bin/python*
-    ```
-    2. 檢視系統預設的Python版本
-    ```
-    python --version
-    ```
-     3. 刪除預設的Python軟連結
-    ```
-    sudo rm /usr/bin/python
-    ```
-     4. 立一個新的軟連結指向Python 3.7
-    ```
-    sudo ln -s /usr/bin/python3.7 /usr/bin/python
-    ```
-8. 將pip升級至python3.7的版本    
-    1. 確認目前pip版本
-    ```
-    python -m pip --version
-    ```
-    2. 移除目前版本的pip
-    ```
-    sudo apt remove python-pip
-    ```
-    3. 安裝當前Python3版本的pip
-    ```
-    sudo apt install python3-pip
-    ```
-    4. 安裝Python3.7的pip
-    ```
-    python -m pip install pip
-    ```
-    5. 使用文字編輯器開啟`~/.bashrc`
-    ```
-    vim ~/.bashrc
-    ```
-    6. 將以下內容複製至文件末端
-    ```
-    # set PATH so it includes user's private bin if it exists
-    if [ -d "$HOME/.local/bin" ] ; then
-        PATH="$HOME/.local/bin:$PATH"
-    fi
-    ```
-    7. 重新讀取`.bashrc`或重新開啟終端機
-    ```
-    source ~/.bashrc
-    ```
-    8. 確認當前pip版本
-    ```
-    pip --version
-    ```
-9. 從github下載此程式碼
+7. 從github下載此程式碼
 ```
 git clone https://github.com/vf19961226/Workpiece_Positioning.git
 ```
-11. 安裝程式所需的套件包
+8. 安裝程式所需的套件包
 ```
 cd Workpiece_Positioning
 pip install -r requirements.txt
