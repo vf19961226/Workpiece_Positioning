@@ -24,12 +24,25 @@ import paho.mqtt.client as mqtt
 import time
 from itertools import combinations 
 import math
+import argparse
 
 import pycuda.autoinit  # This is needed for initializing CUDA driver
 
 
 import Image_Processing as ip
-import My_yolo
+#import My_yolo
+from yolo_with_plugins import TrtYOLO
+
+parser=argparse.ArgumentParser()
+parser.add_argument('--model', type=str, required=True,help='Input your tensorrt model.')
+parser.add_argument('--category_num', type=int, default=7,help='number of object categories [7]')
+parser.add_argument('--letter_box', action='store_true',help='inference with letterboxed image [False]')
+parser.add_argument("--brokerIP",default="127.0.0.1",help="MQTT broker IP",type=str)
+parser.add_argument("--brokerPORT",default=1883,help="MQTT broker port",type=int)
+parser.add_argument("--topic",default='Command',help="Subscribe topic",type=str)
+parser.add_argument("--img",default="./figure/1.png",help="Input your image.",type=str)
+parser.add_argument("--output",default="./figure/output.png",help="Output your predict image.",type=str)
+args=parser.parse_args()
 
 sub_topic = []
 sub_return = ['Nothing','Nothing']
@@ -70,11 +83,20 @@ def img_correction (img, npz_path):
     return img
 
 def positioning (img_gray, box):
+    '''mistake
     left, top, width, height = box
     left_top = [left , top]
     left_bottom = [left, top + height]
     right_bottom = [left + width, top + height]
     right_top = [left + width, top]
+    vertices = np.array([ left_top, left_bottom, right_bottom, right_top], np.int32)
+    '''
+
+    x_min, y_min, x_max, y_max = box[0], box[1], box[2], box[3]
+    left_top = [x_min, y_min]
+    left_bottom = [x_min, y_max]
+    right_bottom = [x_max, y_max]
+    right_top = [x_max, y_min]
     vertices = np.array([ left_top, left_bottom, right_bottom, right_top], np.int32)
     
     blur_gray = cv2.GaussianBlur(img_gray,(29, 29), 0)
@@ -109,6 +131,8 @@ def positioning (img_gray, box):
     cYpoint2 = np.array([Cpoint[1], 0])
     #longY = ip.get_pixel_long(really, cYpoint1, cYpoint2) #工件相對於定位工件的Y軸座標  <--回傳雷雕機
     longY = abs(cY - Cpoint[1]) * pixel_per_metricY
+    print(cX)
+    print(cY)
     
     '''計算工件旋轉角度'''
      #霍夫直線檢測參數設定
@@ -131,17 +155,58 @@ def positioning (img_gray, box):
     
     return longX, longY, w, h, arc, cX, cY
 
+def draw_boxed_text(img, text, topleft, color):
+    """Draw a transluent boxed text in white, overlayed on top of a
+    colored patch surrounded by a black border. FONT, TEXT_SCALE,
+    TEXT_THICKNESS and ALPHA values are constants (fixed) as defined
+    on top.
+    # Arguments
+      img: the input image as a numpy array.
+      text: the text to be drawn.
+      topleft: XY coordinate of the topleft corner of the boxed text.
+      color: color of the patch, i.e. background of the text.
+    # Output
+      img: note the original image is modified inplace.
+    """
+    assert img.dtype == np.uint8
+    img_h, img_w, _ = img.shape
+    #img_h, img_w = img.shape
+    if topleft[0] >= img_w or topleft[1] >= img_h:
+        return img
+    margin = 3
+    FONT = cv2.FONT_HERSHEY_SIMPLEX
+    TEXT_SCALE = 0.8
+    TEXT_THICKNESS = 1
+    size = cv2.getTextSize(text, FONT, TEXT_SCALE, TEXT_THICKNESS)
+    w = size[0][0] + margin * 2
+    h = size[0][1] + margin * 2
+    # the patch is used to draw boxed text
+    patch = np.zeros((h, w, 3), dtype=np.uint8)
+    patch[...] = color
+    WHITE = (255, 255, 255)
+    cv2.putText(patch, text, (margin+1, h-margin-2), FONT, TEXT_SCALE,
+                WHITE, thickness=TEXT_THICKNESS, lineType=cv2.LINE_8)
+    BLACK = (0, 0, 0)
+    cv2.rectangle(patch, (0, 0), (w-1, h-1), BLACK, thickness=1)
+    w = min(w, img_w - topleft[0])  # clip overlay at image boundary
+    h = min(h, img_h - topleft[1])
+    # Overlay the boxed text onto region of interest (roi) in img
+    roi = img[topleft[1]:topleft[1]+h, topleft[0]:topleft[0]+w, :]
+    #roi = img[topleft[1]:topleft[1]+h, topleft[0]:topleft[0]+w]
+    ALPHA = 0.5
+    cv2.addWeighted(patch[0:h, 0:w, :], ALPHA, roi, 1 - ALPHA, 0, roi)
+    return img
+
 '''Mqtt設定'''
-client = initial("35.238.26.242", 1883) #需修改成Broker的IP位置
-#client = initial("140.116.86.58", 1883) #需修改成Broker的IP位置
-subscribe(client, ["Command"]) #訂閱主題
+client = initial(args.brokerIP, args.brokerPORT) #需修改成Broker的IP位置
+subscribe(client, [args.topic]) #訂閱主題
 client.on_connect = on_connect #連上Broker時要做的動作
 client.on_message = sub_messages #接到訂閱消息回傳時的動作
 client.loop_start() #MQTT啟動
 
 '''計算必要參數'''
 n = 0 #左相機編號
-img = cv2.imread('./figure/background.png') #匯入背景照片(左相機)
+img = cv2.imread('./figure/2.png') #匯入背景照片(左相機)
 path = './data/camera_parameter_' + str(n) + '.npz'
 img = img_correction(img, path) #影像校正
 
@@ -149,12 +214,12 @@ gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) #像素長度換算
 blur_gray = cv2.GaussianBlur(gray,(3, 3), 0)
 canny = cv2.Canny(blur_gray,150,50)
 
-right_bottom = [img.shape[1] -145, img.shape[0]/2]
-left_top = [img.shape[1]/2 +80 , img.shape[0]*0 +130]
-right_top = [img.shape[1] -145, img.shape[0]*0 +130]
-mid_left_bottom = [img.shape[1]/2 +80, img.shape[0]*0 +155]
-mid = [img.shape[1]/2 +150, img.shape[0]*0 +155]
-mid_right_bottom = [img.shape[1]/2 +150, img.shape[0]/2]
+right_bottom = [img.shape[1] -150, img.shape[0]/2 -20]
+left_top = [img.shape[1]/2 +75 , img.shape[0]*0 +110]
+right_top = [img.shape[1] -150, img.shape[0]*0 +110]
+mid_left_bottom = [img.shape[1]/2 +75, img.shape[0]*0 +135]
+mid = [img.shape[1]/2 +145, img.shape[0]*0 +135]
+mid_right_bottom = [img.shape[1]/2 +145, img.shape[0]/2 -20]
 vertices = np.array([ mid_right_bottom, right_bottom, right_top, left_top, mid_left_bottom, mid], np.int32)
 roi_image = ip.region_of_interest(canny, vertices) #L形遮罩，方便辨識定位工件上的圓
 
@@ -206,7 +271,7 @@ for i in index:
         if X_long/Y_long >= 0.8 and X_long/Y_long <= 1.2: #兩邊距離需在一定區間內
             break
 else:
-    print("ERROR")
+    print("Positioning ERROR")
     
 
 if min_slope == 0 and max_slope == 1:
@@ -238,18 +303,25 @@ theta = ip.get_theta(slope[min_slope]) #取得像機座標與實際座標的旋�
 
 pixel_per_metricX = ip.get_pixel_long(really, Xpoint, Cpoint) #計算水平(X)的每像素公制距離
 pixel_per_metricY = ip.get_pixel_long(really, Ypoint, Cpoint) #計算垂直(Y)的每像素公制距離
-print(Cpoint)
+#print(Cpoint)
 while 1:
     '''相機影像截圖'''
     
     L_cap = cv2.VideoCapture(n)
-    while(1):
+    while 1:
         t1 = time.time()
         L_ret, L_frame = L_cap.read()
         if L_ret == True:
-            cv2.imshow("L_capture", L_frame)
+            
+            img_resize = cv2.resize(L_frame, (320,240), interpolation=cv2.INTER_NEAREST)
+            img_encode = cv2.imencode('.jpg', img_resize)[1]
+            data_encode = np.array(img_encode)
+            str_encode = data_encode.tostring()
+            client.publish("Machine01/Video", str_encode)
+            
+            #cv2.imshow("L_capture", L_frame)
             if sub_return[1] == "OK": 
-                #cv2.imwrite("L_img.jpg", L_frame) 
+                cv2.imwrite("L_img.png", L_frame) 
                 break
             elif sub_return[1] == "END":
                 break
@@ -263,36 +335,44 @@ while 1:
         break
     t2 = time.time()
     '''左相機影像校正'''
-    #L_mtx, L_dist = ip.npz_read('./data/camera_parameter_' + str(n) + '.npz')
-    #img = cv2.imread("L_img.jpg")
-    #L_frame = cv2.imread("./figure/1.png") #Only for test
-    #L_img = ip.img_correction(L_frame, L_mtx, L_dist)
     path = './data/camera_parameter_' + str(n) + '.npz'
+    #L_mtx, L_dist = ip.npz_read(path) #可刪掉
+    #img = cv2.imread("L_img.png") #for use
+    L_frame = cv2.imread("./figure/1.png") #Only for test
+    #L_img = ip.img_correction(L_frame, L_mtx, L_dist) #可刪掉
     L_img = img_correction(L_frame, path)
     L_gray = cv2.cvtColor(L_img, cv2.COLOR_BGR2GRAY)
    
     '''Yolov4工件辨識'''
-    
-    classes, confidences, boxes = My_yolo.identify(L_img)
-    #print(boxes)
+    trt_yolo = TrtYOLO(args.model, args.category_num, args.letter_box)
+    boxes, confs, clss = trt_yolo.detect(L_img, 0.7)
     t3 = time.time()
-    for classId, confidence, box in zip(classes.flatten(), confidences.flatten(), boxes):
-        thisClass = classId
+    CLS = ['Hexagon', 'Pentagon', 'Square', 'Triangle', 'Rectangle', 'Cirale', 'Non']
+    for classId, confidence, box in zip(clss.flatten(), confs.flatten(), boxes):
+        thisClass = CLS[int(classId)]
         longX, longY, w, h, arc, cX, cY = positioning (L_gray, box)
     
         '''MQTT傳送結果至雷雕機'''
-        output = str(thisClass) + "," + str(longX) + "," + str(longY) + "," + str(w) + "," + str(h) +  "," + str(arc) #發布指令[工件種類, 以定位工件中點為原點的工件中心點X座標, 以定位工件中點為原點的工件中心點Y座標, 工件外接矩形寬, 工件外接矩形高, 工件距離攝影機深度, 弓箭旋轉角度(弧度)]
-        publish(client, "Feedback", output) #發布指令
+        output = str(int(classId)) + "," + str(longX) + "," + str(longY) + "," + str(w) + "," + str(h) +  "," + str(arc) #發布指令[工件種類, 以定位工件中點為原點的工件中心點X座標, 以定位工件中點為原點的工件中心點Y座標, 工件外接矩形寬, 工件外接矩形高, 工件距離攝影機深度, 弓箭旋轉角度(弧度)]
+        publish(client, "Machine01/Feedback", output) #發布指令
         sub_return = ['Nothing','Nothing']
         t4 = time.time()
-        #print("影像擷取執行時間為：%f 秒" % (t2 - t1))
-        #print('YOLOv4執行時間為： %f 秒' % (t3 - t2))
-        #print('工件定位執行時間為： %f 秒' % (t4 - t3))
-        #print('全部執行時間為： %f 秒' % (t4 - t1))
-        #print(output)
-    #cv2.circle(L_frame,(cX,cY),2,(0,0,255),3)
-    #L_frame = My_yolo.draw_box(L_frame, classes, confidences, boxes)
+        print("影像擷取執行時間為：%f 秒" % (t2 - t1))
+        print('YOLOv4執行時間為： %f 秒' % (t3 - t2))
+        print('工件定位執行時間為： %f 秒' % (t4 - t3))
+        print('全部執行時間為： %f 秒' % (t4 - t1))
+        print(output)
+        '''顯示定位結果'''
+        #x_min, y_min, x_max, y_max = box[0], box[1], box[2], box[3]
+        #color = [0, 0, 255]
+        #cv2.rectangle(L_frame, (x_min, y_min), (x_max, y_max), color, 2)
+        #cv2.circle(L_frame,(cX,cY),2,(0,0,255),3)
+        #txt_loc = (max(x_min+2, 0), max(y_min+2, 0))
+        #txt = '{} {:.2f}'.format(thisClass, confidence)
+        #L_frame = draw_boxed_text(L_frame, txt, txt_loc, color)
+        
+    '''顯示定位結果'''
     #cv2.imshow("1", L_frame)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
 client.loop_stop() #MQTT停止
