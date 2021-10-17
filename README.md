@@ -21,7 +21,7 @@
 |記憶體|2 GB 64 位元 LPDDR4 25.6 GB/秒
 |儲存空間|SanDisk Ultra 64GB
 |CUDA|10.2
-|Python|3.7.10
+|Python|3.6.9
 
 #### WebCam
 WebCam使用ASUS推出的[**Webcam C3**](https://www.asus.com/tw/accessories/streaming-kits/all-series/asus-webcam-c3/)，以流暢的 30 fps 輸出畫質銳利的 FHD (1920 x 1080) 視訊，但因感光能力較差，在正常光源下有過曝情形，故改用Logitech推出的[**C920 PRO**](https://www.logitech.com/zh-tw/products/webcams/c920-pro-hd-webcam.960-001062.html)，其感光能力較佳，且也能以流暢的 30 fps 輸出畫質銳利的 FHD (1920 x 1080) 視訊。
@@ -33,11 +33,11 @@ WebCam使用ASUS推出的[**Webcam C3**](https://www.asus.com/tw/accessories/str
 
 |項目|版本
 |:---:|:---:
-|Python|3.7.10
+|Python|3.6.9
 |OpenCV|4.5.1
 |Numpy|1.19.4
 |Paho-mqtt|1.5.1
-|TensorRT|7.1.3
+|TensorRT|8.0.1
 |Numba|0.34.0
 |Pycuda|2019.1.2
 
