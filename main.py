@@ -329,17 +329,15 @@ while 1:
                 break
             cv2.waitKey(1)
     L_cap.release()
-    cv2.destroyAllWindows()
+    #cv2.destroyAllWindows()
     
     if sub_return[1] == "END":
         break
+    sub_return[1] = ""
     t2 = time.time()
     '''左相機影像校正'''
     path = './data/camera_parameter_' + str(n) + '.npz'
-    #L_mtx, L_dist = ip.npz_read(path) #可刪掉
-    #img = cv2.imread("L_img.png") #for use
-    L_frame = cv2.imread("./figure/1.png") #Only for test
-    #L_img = ip.img_correction(L_frame, L_mtx, L_dist) #可刪掉
+    #L_frame = cv2.imread("./figure/obj_L_img/obj_L_img0.jpg") #Only for test
     L_img = img_correction(L_frame, path)
     L_gray = cv2.cvtColor(L_img, cv2.COLOR_BGR2GRAY)
    
@@ -370,6 +368,9 @@ while 1:
         #txt_loc = (max(x_min+2, 0), max(y_min+2, 0))
         #txt = '{} {:.2f}'.format(thisClass, confidence)
         #L_frame = draw_boxed_text(L_frame, txt, txt_loc, color)
+        
+        else:
+            print('This cycle is end.')
         
     '''顯示定位結果'''
     #cv2.imshow("1", L_frame)
